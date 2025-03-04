@@ -5,16 +5,16 @@ import userModel from "../models/userModel.js";
 import crypto from "crypto";
 import { log } from "console";
 import productModel from "../models/productModel.js";
-import OTP from "../models/otpmodel.js";
+import OTP from "../models/otpModel.js";
 import nodemailer from "nodemailer";
 import otpGenerator from "otp-generator";
 
 const transporter = nodemailer.createTransport({
   service: "gmail",
-  port: 465, 
+  port: 465,
   secure: true,
   auth: {
-    user: process.env.EMAIL, 
+    user: process.env.EMAIL,
     pass: process.env.EMAIL_PASSWORD,
   },
 });
@@ -22,11 +22,16 @@ export const sendOtp = async (req, res) => {
   try {
     const { email } = req.body;
     if (!email) {
-      return res.status(400).json({ success: false, message: "Email is required" });
+      return res
+        .status(400)
+        .json({ success: false, message: "Email is required" });
     }
 
     // Generate OTP
-    const otp = otpGenerator.generate(6, { upperCaseAlphabets: false, specialChars: false });
+    const otp = otpGenerator.generate(6, {
+      upperCaseAlphabets: false,
+      specialChars: false,
+    });
 
     // Save OTP in database
     await OTP.findOneAndUpdate(
@@ -55,25 +60,32 @@ export const verifyOtp = async (req, res) => {
   try {
     const { email, otp } = req.body;
     if (!email || !otp) {
-      return res.status(400).json({ success: false, message: "Email and OTP are required" });
+      return res
+        .status(400)
+        .json({ success: false, message: "Email and OTP are required" });
     }
 
     const otpRecord = await OTP.findOne({ email, otp });
 
     if (!otpRecord) {
-      return res.status(400).json({ success: false, message: "Invalid or expired OTP" });
+      return res
+        .status(400)
+        .json({ success: false, message: "Invalid or expired OTP" });
     }
 
     // OTP verified, delete it from DB
     await OTP.deleteOne({ email });
 
-    res.status(200).json({ success: true, message: "OTP verified successfully" });
+    res
+      .status(200)
+      .json({ success: true, message: "OTP verified successfully" });
   } catch (error) {
     console.error("OTP verification error:", error);
-    res.status(500).json({ success: false, message: "OTP verification failed" });
+    res
+      .status(500)
+      .json({ success: false, message: "OTP verification failed" });
   }
 };
-
 
 const createToken = (id) => {
   return jwt.sign({ id }, process.env.JWT_SECRET, { expiresIn: "7d" });
@@ -360,6 +372,7 @@ const fetchUserData = async (req, res) => {
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
     const userId = decoded.id || decoded.userId;
 
+    // const user = await userModel.findById(userId).select("image createdAt phone name email, referralCode");
     const user = await userModel.findById(userId).select("-password");
     if (!user) {
       return res.status(404).json({
@@ -402,23 +415,29 @@ const updateRole = async (req, res) => {
     const { userId, role } = req.body;
 
     if (!userId || !role) {
-      return res.status(400).json({ success: false, message: "Missing userId or role" });
+      return res
+        .status(400)
+        .json({ success: false, message: "Missing userId or role" });
     }
 
     const user = await userModel.findById(userId);
     if (!user) {
-      return res.status(404).json({ success: false, message: "User not found" });
+      return res
+        .status(404)
+        .json({ success: false, message: "User not found" });
     }
 
     user.role = role;
     await user.save();
 
-    res.status(200).json({ success: true, message: "Role updated successfully" });
-} catch (error) {
+    res
+      .status(200)
+      .json({ success: true, message: "Role updated successfully" });
+  } catch (error) {
     console.error("Error updating role:", error);
     res.status(500).json({ success: false, message: "Internal Server Error" });
   }
-}
+};
 
 export {
   loginUser,
