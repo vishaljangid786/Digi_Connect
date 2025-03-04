@@ -7,12 +7,21 @@ import userRouter from "./routes/userRoute.js";
 import productRouter from "./routes/productRoute.js";
 import orderRouter from "./routes/orderRoute.js";
 import cartRouter from "./routes/cartRoute.js";
+import bannerRoute from "./routes/banner.routes.js";
+import path from "path";
+import { fileURLToPath } from "url";
 
 // App Config
 const app = express();
 const port = process.env.PORT;
 connectDB();
 connectCloudinary();
+
+// Fix __dirname in ES Modules
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+app.use("/uploads", express.static(path.join(__dirname, "uploads")));
 
 // middlewares
 app.use(express.json());
@@ -23,6 +32,7 @@ app.use("/api/user", userRouter);
 app.use("/api/product", productRouter);
 app.use("/api/order", orderRouter);
 app.use("/api/cart", cartRouter);
+app.use("/api/banner", bannerRoute);
 
 app.get("/", (req, res) => {
   res.send("API Working");
