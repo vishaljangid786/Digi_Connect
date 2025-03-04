@@ -372,8 +372,10 @@ const fetchUserData = async (req, res) => {
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
     const userId = decoded.id || decoded.userId;
 
-    // const user = await userModel.findById(userId).select("image createdAt phone name email, referralCode");
-    const user = await userModel.findById(userId).select("-password");
+    const user = await userModel
+      .findById(userId)
+      .select("image createdAt status phone name email referralCode");
+    // const user = await userModel.findById(userId).select("-password");
     if (!user) {
       return res.status(404).json({
         success: false,
