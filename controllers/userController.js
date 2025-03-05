@@ -161,16 +161,22 @@ const loginUser = async (req, res) => {
 // Route for user register
 const registerUser = async (req, res) => {
   try {
-    const { name, email, phone, password, address, referralCode } = req.body;
+    const { name, email, phone, password, address, referralCode, role } =
+      req.body;
     let imageUrl = null;
 
     // Checking if the user already exists
-    const exists = await userModel.findOne({ email });
-    if (exists) {
+    const checkExistdata = await userModel.findOne({
+      $or: [{ phone }, { email }], // Check if either phone or email exists
+    });
+
+    if (checkExistdata) {
+      // Just check if the user exists
       return res
-        .status(400)
-        .json({ success: false, message: "User already exists" });
+        .status(409)
+        .json({ message: "User already exists with the same credentials" });
     }
+
 
     // Validating email format & strong password
     if (!validator.isEmail(email)) {
@@ -222,6 +228,7 @@ const registerUser = async (req, res) => {
       referralCode: newReferralCode,
       referredBy: referredByUser ? referredByUser._id : null, // Save referrer's ID
       image: imageUrl, // Storing image URL
+      role: role ? "admin" : "user",
       address: {
         street: address?.street || "",
         city: address?.city || "",
@@ -517,7 +524,7 @@ const addReferenceMember = async (req, res) => {
       password: hashedPassword,
       referralCode: newReferralCode,
       referredBy: userId, // Save referrer's ID
-      option: option == "left" ? "left" : "right",
+      option: option,
       address: {
         street: "",
         city: "",
