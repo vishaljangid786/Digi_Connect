@@ -1,5 +1,4 @@
 import mongoose from "mongoose";
-import { type } from "os";
 
 const userSchema = new mongoose.Schema(
   {
@@ -24,7 +23,6 @@ const userSchema = new mongoose.Schema(
     selled: [{ type: mongoose.Schema.Types.ObjectId, ref: "Product" }],
 
     image: { type: String },
-    teams: [{ type: mongoose.Schema.Types.ObjectId, ref: "Teams" }],
 
     address: {
       street: { type: String },
@@ -33,6 +31,13 @@ const userSchema = new mongoose.Schema(
       country: { type: String },
       zipcode: { type: String },
     },
+    option: { type: String, enum: ["left", "right", ""], default: "" },
+    team: [
+      {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "user",
+      },
+    ],
 
     location: { type: String, default: "India" },
   },

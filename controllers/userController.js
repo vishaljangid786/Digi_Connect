@@ -416,7 +416,7 @@ const fetchUserData = async (req, res) => {
     const user = await userModel
       .findById(userId)
       .select("image createdAt status phone name email referralCode")
-      .populate("referredBy", "name email");;
+      .populate("referredBy", "name email");
     // const user = await userModel.findById(userId).select("-password");
     if (!user) {
       return res.status(404).json({
@@ -443,7 +443,9 @@ const getReferredUsers = async (req, res) => {
     const userId = req.user.id || req.user.userId; // Get logged-in user ID from middleware
 
     // Find users referred by this user
-    const referredUsers = await userModel.find({ referredBy: userId }).select("name email createdAt");
+    const referredUsers = await userModel
+      .find({ referredBy: userId })
+      .select("name email createdAt");
 
     res.status(200).json({
       success: true,
@@ -459,6 +461,86 @@ const getReferredUsers = async (req, res) => {
   }
 };
 
+const addReferenceMember = async (req, res) => {
+  const { name, phone, email, pincode, password, option } = req.body;
+  const userId = req.user.userId;
+  console.log("added id", userId);
+  try {
+    if (!name || !phone || !email || !pincode || !password) {
+      return res.status(400).json({
+        error: "MissingField required",
+        message: {
+          name: !name ? "name is required" : undefined,
+          phone: !phone ? "phone is required" : undefined,
+          email: !email ? "email is required" : undefined,
+          pincode: !pincode ? "pincode is required" : undefined,
+          password: !password ? "password is required" : undefined,
+          option: !option ? "option must be 'left' or 'right'" : undefined, // Fix here
+        },
+      });
+    }
+
+    if (option !== "left" && option !== "right") {
+      return res
+        .status(400)
+        .json({ message: "Option must be 'left' or 'right'" });
+    }
+
+    const checkExistdata = await userModel.findOne({
+      $or: [{ phone }, { email }], // Check if either phone or email exists
+    });
+
+    if (checkExistdata) {
+      // Just check if the user exists
+      return res
+        .status(409)
+        .json({ message: "User already exists with the same credentials" });
+    }
+
+    // Generating a unique referral code
+    const newReferralCode = generateReferralCode();
+
+    // Hashing the password
+    const salt = await bcrypt.genSalt(10);
+    const hashedPassword = await bcrypt.hash(password, salt);
+
+    const referrer = await userModel.findById(userId);
+    if (!referrer) {
+      return res.status(404).json({ message: "Referrer user not found" });
+    }
+
+    // Creating a new user
+    const newUser = new userModel({
+      name,
+      email,
+      phone,
+      password: hashedPassword,
+      referralCode: newReferralCode,
+      referredBy: userId, // Save referrer's ID
+      option: option == "left" ? "left" : "right",
+      address: {
+        street: "",
+        city: "",
+        state: "",
+        country: "",
+        zipcode: pincode,
+      },
+    });
+
+    const user = await newUser.save();
+
+    await userModel.findByIdAndUpdate(
+      userId,
+      { $push: { team: user._id } }, // Push userId into team array
+      { new: true }
+    );
+
+    res.status(201).json({ message: "add team member successful" });
+  } catch (error) {
+    console.error("addReferenceMember Error", error.message);
+    res.status(500).json({ message: "Internal Server Error" });
+  }
+};
 const fetchAllUsers = async (req, res) => {
   try {
     const users = await userModel.find().select("-password"); // Exclude password field
@@ -517,4 +599,5 @@ export {
   fetchUserData,
   removeUser,
   authRole,
+  addReferenceMember,
 };

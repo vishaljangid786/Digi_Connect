@@ -12,6 +12,7 @@ import {
   verifyOtp,
   updateRole,
   getReferredUsers,
+  addReferenceMember,
 } from "../controllers/userController.js";
 import upload from "../middleware/multer.js";
 import authUser from "../middleware/auth.js";
@@ -32,14 +33,15 @@ userRouter.get("/admin/dashboard", authRole("admin"), (req, res) => {
 userRouter.get("/seller/dashboard", authRole("seller"), (req, res) => {
   res.json({ success: true, message: "Welcome to the seller dashboard!" });
 });
-userRouter.get("/fetchallusers", authRole("admin"), fetchAllUsers);
+// userRouter.get("/fetchallusers", authRole("admin"), fetchAllUsers);
+userRouter.get("/fetchallusers", fetchAllUsers);
 userRouter.put("/updateRole", authRole("admin"), updateRole);
 userRouter.get("/referalcode", authUser, fetchReferralCode);
-userRouter.get("/fetchuserdata",authUser, fetchUserData);
+userRouter.get("/fetchuserdata", authUser, fetchUserData);
 userRouter.delete("/deleteuser", authRole("admin"), removeUser);
 userRouter.post("/sendOtp", sendOtp);
 userRouter.post("/verifyOtp", verifyOtp);
 userRouter.get("/referred", authUser, getReferredUsers);
-
+userRouter.post("/addReferenceMember", authUser, addReferenceMember);
 
 export default userRouter;
