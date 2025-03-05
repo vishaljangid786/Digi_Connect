@@ -11,6 +11,7 @@ import {
   sendOtp,
   verifyOtp,
   updateRole,
+  getReferredUsers,
 } from "../controllers/userController.js";
 import upload from "../middleware/multer.js";
 import authUser from "../middleware/auth.js";
@@ -38,6 +39,7 @@ userRouter.get("/fetchuserdata",authUser, fetchUserData);
 userRouter.delete("/deleteuser", authRole("admin"), removeUser);
 userRouter.post("/sendOtp", sendOtp);
 userRouter.post("/verifyOtp", verifyOtp);
+userRouter.get("/referred", authUser, getReferredUsers);
 
 
 export default userRouter;

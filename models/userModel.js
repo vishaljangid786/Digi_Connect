@@ -13,12 +13,18 @@ const userSchema = new mongoose.Schema(
 
     cartData: { type: Object, default: {} },
     referralCode: { type: String, unique: true },
+    referredBy: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "user",
+      default: null,
+    },
 
     orders: [{ type: mongoose.Schema.Types.ObjectId, ref: "Order" }],
     products: [{ type: mongoose.Schema.Types.ObjectId, ref: "Product" }],
     selled: [{ type: mongoose.Schema.Types.ObjectId, ref: "Product" }],
 
     image: { type: String },
+    teams: [{ type: mongoose.Schema.Types.ObjectId, ref: "Teams" }],
 
     address: {
       street: { type: String },

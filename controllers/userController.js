@@ -18,7 +18,8 @@ const transporter = nodemailer.createTransport({
     pass: process.env.EMAIL_PASSWORD,
   },
 });
-export const sendOtp = async (req, res) => {
+
+const sendOtp = async (req, res) => {
   try {
     const { email } = req.body;
     if (!email) {
@@ -44,8 +45,17 @@ export const sendOtp = async (req, res) => {
     const mailOptions = {
       from: process.env.EMAIL,
       to: email,
-      subject: "Your OTP Code",
-      text: `Your OTP is ${otp}. It will expire in 5 minutes.`,
+      subject: "🔐Your Secure OTP Code - Action Required",
+      text: `Dear User, 
+
+Your One-Time Password (OTP) for authentication is: ${otp}. 
+
+For security reasons, this code will expire in 5 minutes. Please do not share it with anyone.
+
+If you did not request this code, please ignore this email.
+
+Best regards,  
+Vk Marketing`,
     };
 
     await transporter.sendMail(mailOptions);
@@ -56,9 +66,9 @@ export const sendOtp = async (req, res) => {
     res.status(500).json({ success: false, message: "Failed to send OTP" });
   }
 };
-export const verifyOtp = async (req, res) => {
+const verifyOtp = async (req, res) => {
   try {
-    const { email, otp } = req.body;
+    const { email, otp, newPassword } = req.body;
     if (!email || !otp) {
       return res
         .status(400)
@@ -75,6 +85,24 @@ export const verifyOtp = async (req, res) => {
 
     // OTP verified, delete it from DB
     await OTP.deleteOne({ email });
+
+    // If a new password is provided, update user's password
+    if (newPassword) {
+      const user = await userModel.findOne({ email });
+
+      if (!user) {
+        return res
+          .status(404)
+          .json({ success: false, message: "User not found" });
+      }
+
+      // Hash the new password before saving
+      const salt = await bcrypt.genSalt(10);
+      const hashedPassword = await bcrypt.hash(newPassword, salt);
+
+      user.password = hashedPassword;
+      await user.save();
+    }
 
     res
       .status(200)
@@ -133,7 +161,7 @@ const loginUser = async (req, res) => {
 // Route for user register
 const registerUser = async (req, res) => {
   try {
-    const { name, email, phone, password, address } = req.body;
+    const { name, email, phone, password, address, referralCode } = req.body;
     let imageUrl = null;
 
     // Checking if the user already exists
@@ -172,7 +200,18 @@ const registerUser = async (req, res) => {
     }
 
     // Generating a unique referral code
-    const referralCode = generateReferralCode();
+    const newReferralCode = generateReferralCode();
+
+    // Find the referring user (if referralCode is provided)
+    let referredByUser = null;
+    if (referralCode) {
+      referredByUser = await userModel.findOne({ referralCode });
+      if (!referredByUser) {
+        return res
+          .status(400)
+          .json({ success: false, message: "Invalid referral code" });
+      }
+    }
 
     // Creating a new user
     const newUser = new userModel({
@@ -180,7 +219,8 @@ const registerUser = async (req, res) => {
       email,
       phone,
       password: hashedPassword,
-      referralCode,
+      referralCode: newReferralCode,
+      referredBy: referredByUser ? referredByUser._id : null, // Save referrer's ID
       image: imageUrl, // Storing image URL
       address: {
         street: address?.street || "",
@@ -200,6 +240,7 @@ const registerUser = async (req, res) => {
       success: true,
       token,
       referralCode: user.referralCode,
+      referredBy: referredByUser ? referredByUser.email : null, // Send referredBy email in response
       message: "User registered successfully",
     });
   } catch (error) {
@@ -374,7 +415,8 @@ const fetchUserData = async (req, res) => {
 
     const user = await userModel
       .findById(userId)
-      .select("image createdAt status phone name email referralCode");
+      .select("image createdAt status phone name email referralCode")
+      .populate("referredBy", "name email");;
     // const user = await userModel.findById(userId).select("-password");
     if (!user) {
       return res.status(404).json({
@@ -392,6 +434,27 @@ const fetchUserData = async (req, res) => {
     res.status(500).json({
       success: false,
       message: "Error fetching user data",
+    });
+  }
+};
+
+const getReferredUsers = async (req, res) => {
+  try {
+    const userId = req.user.id || req.user.userId; // Get logged-in user ID from middleware
+
+    // Find users referred by this user
+    const referredUsers = await userModel.find({ referredBy: userId }).select("name email createdAt");
+
+    res.status(200).json({
+      success: true,
+      count: referredUsers.length,
+      referredUsers,
+    });
+  } catch (error) {
+    console.error("Error fetching referred users:", error);
+    res.status(500).json({
+      success: false,
+      message: "Error fetching referred users",
     });
   }
 };
@@ -442,6 +505,9 @@ const updateRole = async (req, res) => {
 };
 
 export {
+  getReferredUsers,
+  sendOtp,
+  verifyOtp,
   loginUser,
   updateRole,
   fetchAllUsers,
