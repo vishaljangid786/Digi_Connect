@@ -1,4 +1,13 @@
 import express from "express";
-const incomeLevelRouter = express.Router();
+import { authRole } from "../controllers/userController.js";
+import {
+  addNewLevel,
+  getAllLevel,
+} from "../controllers/incomeLevel.controller.js";
+import authUser from "../middleware/auth.js";
+const incomeLevelRoute = express.Router();
 
-// incomeLevelRouter.post()
+incomeLevelRoute.post("/addNewLevel", authRole("admin"), addNewLevel);
+incomeLevelRoute.get("/getAllLevel", authUser, getAllLevel);
+
+export default incomeLevelRoute;

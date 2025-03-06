@@ -10,6 +10,7 @@ import cartRouter from "./routes/cartRoute.js";
 import bannerRoute from "./routes/banner.routes.js";
 import path from "path";
 import { fileURLToPath } from "url";
+import incomeLevelRoute from "./routes/incomeLevel.routes.js";
 
 // App Config
 const app = express();
@@ -33,6 +34,7 @@ app.use("/api/product", productRouter);
 app.use("/api/order", orderRouter);
 app.use("/api/cart", cartRouter);
 app.use("/api/banner", bannerRoute);
+app.use("/api/level", incomeLevelRoute)
 
 app.get("/", (req, res) => {
   res.send("API Working");
