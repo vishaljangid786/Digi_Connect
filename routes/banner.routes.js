@@ -1,8 +1,12 @@
 import express from "express";
 import multer from "multer";
 const bannerRoute = express.Router();
-import { uploadBanner, getBannerImage, deleteBanner } from "../controllers/banner.controller.js"; 
-
+import {
+  uploadBanner,
+  getBannerImage,
+  deleteBanner,
+} from "../controllers/banner.controller.js";
+import { authRole } from "../controllers/userController.js";
 
 const FILE_TYPE_MAP = {
   "image/png": "png",
@@ -28,7 +32,7 @@ const storage = multer.diskStorage({
 const upload = multer({ storage: storage });
 
 // bannerRoute.post('/', upload.fields([{ name: 'image', maxCount: 1 }]), uploadBanner)
-bannerRoute.post("/", upload.single("image"), uploadBanner);
+bannerRoute.post("/", authRole("admin"), upload.single("image"), uploadBanner);
 bannerRoute.get("/", getBannerImage);
 bannerRoute.delete("/:id", deleteBanner);
 

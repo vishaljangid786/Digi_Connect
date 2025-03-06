@@ -14,6 +14,7 @@ import {
   getReferredUsers,
   addReferenceMember,
   getTeamMember,
+  getOptionTeam,
 } from "../controllers/userController.js";
 import upload from "../middleware/multer.js";
 import authUser from "../middleware/auth.js";
@@ -45,5 +46,6 @@ userRouter.post("/verifyOtp", verifyOtp);
 userRouter.get("/referred", authUser, getReferredUsers);
 userRouter.post("/addReferenceMember", authUser, addReferenceMember);
 userRouter.get("/getTeamMember", authUser, getTeamMember);
+userRouter.get("/getOptionTeam", authUser, getOptionTeam)
 
 export default userRouter;

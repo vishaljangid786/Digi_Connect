@@ -597,7 +597,7 @@ const getTeamMember = async (req, res) => {
   try {
     const userId = req.user.userId;
     const userTeam = await userModel.findById(userId).populate("team");
-    console.log("user team", userTeam.team);
+    // console.log("user team", userTeam.team);
     // Count "left" and "right" options
     const count = userTeam.team.reduce(
       (acc, user) => {
@@ -620,6 +620,32 @@ const getTeamMember = async (req, res) => {
   }
 };
 
+const getOptionTeam = async (req, res) => {
+  try {
+    const { option } = req.body;
+    const userId = req.user.userId;
+    if (option !== "left" && option !== "right" && option !== "total") {
+      return res
+        .status(400)
+        .json({ message: "Option must be 'left', 'right' and total" });
+    }
+    const userTeam = await userModel.findById(userId).populate("team");
+
+    let User;
+    if (option == "left" || option == "right") {
+      // Filter users with option "left"
+      User = userTeam.team.filter((team) => team.option === option);
+    } else {
+      User = userTeam.team;
+    }
+
+    res.status(200).json({ message: `get ${option} Team Member`, user: User });
+  } catch (error) {
+    console.error("getOptionTeam Error", error.message);
+    res.status(500).json({ message: "Internal Server Error" });
+  }
+};
+
 export {
   getReferredUsers,
   sendOtp,
@@ -635,4 +661,5 @@ export {
   authRole,
   addReferenceMember,
   getTeamMember,
+  getOptionTeam,
 };
