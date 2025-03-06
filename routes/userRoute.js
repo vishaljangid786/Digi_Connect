@@ -13,6 +13,7 @@ import {
   updateRole,
   getReferredUsers,
   addReferenceMember,
+  getTeamMember,
 } from "../controllers/userController.js";
 import upload from "../middleware/multer.js";
 import authUser from "../middleware/auth.js";
@@ -43,5 +44,6 @@ userRouter.post("/sendOtp", sendOtp);
 userRouter.post("/verifyOtp", verifyOtp);
 userRouter.get("/referred", authUser, getReferredUsers);
 userRouter.post("/addReferenceMember", authUser, addReferenceMember);
+userRouter.get("/getTeamMember", authUser, getTeamMember);
 
 export default userRouter;

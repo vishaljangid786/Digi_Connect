@@ -177,7 +177,6 @@ const registerUser = async (req, res) => {
         .json({ message: "User already exists with the same credentials" });
     }
 
-
     // Validating email format & strong password
     if (!validator.isEmail(email)) {
       return res
@@ -423,6 +422,7 @@ const fetchUserData = async (req, res) => {
     const user = await userModel
       .findById(userId)
       .select("image createdAt status phone name email referralCode")
+      .select("role")
       .populate("referredBy", "name email");
     // const user = await userModel.findById(userId).select("-password");
     if (!user) {
@@ -593,6 +593,33 @@ const updateRole = async (req, res) => {
   }
 };
 
+const getTeamMember = async (req, res) => {
+  try {
+    const userId = req.user.userId;
+    const userTeam = await userModel.findById(userId).populate("team");
+    console.log("user team", userTeam.team);
+    // Count "left" and "right" options
+    const count = userTeam.team.reduce(
+      (acc, user) => {
+        if (user.option === "left") acc.left += 1;
+        if (user.option === "right") acc.right += 1;
+        return acc;
+      },
+      { left: 0, right: 0 }
+    );
+
+    res.status(200).json({
+      message: "Get All Team Data",
+      left: count.left,
+      right: count.right,
+      total: userTeam.team.length,
+    });
+  } catch (error) {
+    console.error("getTeamMember Error", error.message);
+    res.status(500).json({ message: "Internal Server Error" });
+  }
+};
+
 export {
   getReferredUsers,
   sendOtp,
@@ -607,4 +634,5 @@ export {
   removeUser,
   authRole,
   addReferenceMember,
+  getTeamMember,
 };
