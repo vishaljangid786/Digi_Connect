@@ -470,7 +470,7 @@ const getReferredUsers = async (req, res) => {
 
 const addReferenceMember = async (req, res) => {
   const { name, phone, email, pincode, password, option } = req.body;
-  const userId = req.user.userId;
+  const userId = req.user.userId || req.user.id;
   console.log("added id", userId);
   try {
     if (!name || !phone || !email || !pincode || !password) {
@@ -595,7 +595,7 @@ const updateRole = async (req, res) => {
 
 const getTeamMember = async (req, res) => {
   try {
-    const userId = req.user.userId;
+    const userId = req.user.userId || req.user.id;
     const userTeam = await userModel.findById(userId).populate("team");
     // console.log("user team", userTeam.team);
     // Count "left" and "right" options
