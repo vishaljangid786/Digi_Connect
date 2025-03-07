@@ -40,6 +40,6 @@ productSchema.methods.calculateAverageRating = function () {
 
 // Create Model
 const productModel =
-  mongoose.models.product || mongoose.model("product", productSchema);
+  mongoose.models.product || mongoose.model("Product", productSchema);
 
 export default productModel;

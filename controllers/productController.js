@@ -146,8 +146,6 @@ const singleProduct = async (req, res) => {
         .status(404)
         .json({ success: false, message: "Product not found" });
     }
-
-    console.log("Product Data:", product);
     res.json({ success: true, product });
   } catch (error) {
     console.error("Error fetching product:", error);
