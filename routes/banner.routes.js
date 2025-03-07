@@ -34,6 +34,6 @@ const upload = multer({ storage: storage });
 // bannerRoute.post('/', upload.fields([{ name: 'image', maxCount: 1 }]), uploadBanner)
 bannerRoute.post("/", authRole("admin"), upload.single("image"), uploadBanner);
 bannerRoute.get("/", getBannerImage);
-bannerRoute.delete("/:id", deleteBanner);
+bannerRoute.delete("/:id", authRole("admin"), deleteBanner);
 
 export default bannerRoute;
