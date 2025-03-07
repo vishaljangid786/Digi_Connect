@@ -623,12 +623,13 @@ const getTeamMember = async (req, res) => {
 const getOptionTeam = async (req, res) => {
   try {
     const { option } = req.body;
-    const userId = req.user.userId;
+    const userId = req.user.userId || req.user.id;
     if (option !== "left" && option !== "right" && option !== "total") {
       return res
         .status(400)
         .json({ message: "Option must be 'left', 'right' and total" });
     }
+    // console.log("userId", userId);
     const userTeam = await userModel.findById(userId).populate("team");
 
     let User;
