@@ -18,6 +18,7 @@ const productSchema = new mongoose.Schema({
   sizes: { type: Array, required: true },
   bestseller: { type: Boolean },
   date: { type: Number, required: true },
+  cc: { type: Number, required: true, default: 0 },
   createdBy: {
     type: mongoose.Schema.Types.ObjectId,
     ref: "user",

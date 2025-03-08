@@ -17,13 +17,13 @@ const userSchema = new mongoose.Schema(
       ref: "user",
       default: null,
     },
-    wallet: { type: Number, default: 0 },
+    cc: { type: Number, default: 0 },
+    amount: { type: Number, default: 0 },
+    uid: String,
 
     orders: [{ type: mongoose.Schema.Types.ObjectId, ref: "Order" }],
     products: [{ type: mongoose.Schema.Types.ObjectId, ref: "Product" }],
-    selled: [{ type: mongoose.Schema.Types.ObjectId, ref: "Product" }],
-
-    image: { type: String },
+    selled: [{ type: mongoose.Schema.Types.ObjectId, ref: "Order" }],
 
     address: {
       street: { type: String },

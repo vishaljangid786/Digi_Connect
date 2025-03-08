@@ -123,14 +123,37 @@ const generateReferralCode = () => {
   return crypto.randomBytes(6).toString("hex").toUpperCase(); // Generates a random 12-character alphanumeric code
 };
 
+const generateUID = () => {
+  // Generate 2 random uppercase letters
+  const letters = String.fromCharCode(
+    65 + Math.floor(Math.random() * 26),
+    65 + Math.floor(Math.random() * 26)
+  );
+
+  // Generate 6 random digits
+  const numbers = crypto.randomInt(100000, 999999).toString();
+
+  return `${letters}${numbers}`;
+};
+
 /* --------Routes --------*/
 
 // Route for user login
 const loginUser = async (req, res) => {
   try {
-    const { email, password } = req.body;
+    const { uid, password } = req.body;
 
-    const user = await userModel.findOne({ email });
+    if (!uid || !password) {
+      return res.status(400).json({
+        error: "missingField require",
+        message: {
+          uid: !uid ? "uid is require" : undefined,
+          password: !password ? "password is required" : undefined,
+        },
+      });
+    }
+
+    const user = await userModel.findOne({ uid });
 
     if (!user) {
       return res.json({ success: false, message: "User doesn't exists" });
@@ -161,8 +184,16 @@ const loginUser = async (req, res) => {
 // Route for user register
 const registerUser = async (req, res) => {
   try {
-    const { name, email, phone, password, address, referralCode, role } =
-      req.body;
+    const {
+      name,
+      email,
+      phone,
+      password,
+      address,
+      referralCode,
+      role,
+      option,
+    } = req.body;
     let imageUrl = null;
 
     // Checking if the user already exists
@@ -195,6 +226,12 @@ const registerUser = async (req, res) => {
         .json({ success: false, message: "Please enter a valid phone number" });
     }
 
+    if (option !== "left" && option !== "right") {
+      return res
+        .status(400)
+        .json({ message: "Option must be 'left' or 'right'" });
+    }
+
     // Hashing the password
     const salt = await bcrypt.genSalt(10);
     const hashedPassword = await bcrypt.hash(password, salt);
@@ -206,6 +243,7 @@ const registerUser = async (req, res) => {
 
     // Generating a unique referral code
     const newReferralCode = generateReferralCode();
+    const UID = generateUID();
 
     // Find the referring user (if referralCode is provided)
     let referredByUser = null;
@@ -227,7 +265,9 @@ const registerUser = async (req, res) => {
       referralCode: newReferralCode,
       referredBy: referredByUser ? referredByUser._id : null, // Save referrer's ID
       image: imageUrl, // Storing image URL
+      uid: UID,
       role: role ? "admin" : "user",
+      option: option,
       address: {
         street: address?.street || "",
         city: address?.city || "",
@@ -239,12 +279,21 @@ const registerUser = async (req, res) => {
 
     const user = await newUser.save();
 
+    if (referralCode) {
+      await userModel.findByIdAndUpdate(
+        referredByUser._id,
+        { $push: { team: user._id } }, // Push userId into team array
+        { new: true }
+      );
+    }
+
     // Creating a token
     const token = createToken(user._id);
 
     res.status(201).json({
       success: true,
       token,
+      UID: user.uid,
       referralCode: user.referralCode,
       referredBy: referredByUser ? referredByUser.email : null, // Send referredBy email in response
       message: "User registered successfully",
@@ -405,6 +454,7 @@ const fetchReferralCode = async (req, res) => {
     });
   }
 };
+
 const fetchUserData = async (req, res) => {
   try {
     const token = req.headers.authorization?.split(" ")[1];
@@ -419,11 +469,6 @@ const fetchUserData = async (req, res) => {
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
     const userId = decoded.id || decoded.userId;
 
-    // const user = await userModel
-    //   .findById(userId)
-    //   .select("image createdAt status phone name email referralCode")
-    //   .select("role")
-    //   .populate("referredBy", "name email");
     const user = await userModel.findById(userId).select("-password");
     if (!user) {
       return res.status(404).json({
@@ -506,6 +551,7 @@ const addReferenceMember = async (req, res) => {
 
     // Generating a unique referral code
     const newReferralCode = generateReferralCode();
+    const UID = generateUID();
 
     // Hashing the password
     const salt = await bcrypt.genSalt(10);
@@ -525,6 +571,7 @@ const addReferenceMember = async (req, res) => {
       referralCode: newReferralCode,
       referredBy: userId, // Save referrer's ID
       option: option,
+      uid: UID,
       address: {
         street: "",
         city: "",
@@ -647,10 +694,43 @@ const getOptionTeam = async (req, res) => {
   }
 };
 
+const updatecc = async (req, res) => {
+  const { userId, totalcc } = req.body;
+
+  if (!userId || totalcc === undefined) {
+    return res
+      .status(400)
+      .json({ success: false, message: "Missing required fields" });
+  }
+
+  try {
+    const updatedUser = await userModel.findByIdAndUpdate(
+      userId,
+      { $set: { cc: totalcc } },
+      { new: true }
+    );
+    if (!updatedUser) {
+      return res
+        .status(404)
+        .json({ success: false, message: "User not found" });
+    }
+
+    res.status(200).json({
+      success: true,
+      message: "Total CC updated successfully",
+      user: updatedUser,
+    });
+  } catch (error) {
+    console.error("Error updating CC:", error);
+    res.status(500).json({ success: false, message: "Server error" });
+  }
+};
+
 export {
   getReferredUsers,
   sendOtp,
   verifyOtp,
+  updatecc,
   loginUser,
   updateRole,
   fetchAllUsers,

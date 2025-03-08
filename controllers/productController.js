@@ -128,8 +128,7 @@ const removeProduct = async (req, res) => {
 // function for single product info
 const singleProduct = async (req, res) => {
   try {
-    const { productId } = req.body; // Ensure frontend sends productId
-    console.log("Requested Product ID:", productId);
+    const { productId } = req.body; 
 
     if (!productId) {
       return res

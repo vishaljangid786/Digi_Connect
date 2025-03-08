@@ -9,6 +9,7 @@ import {
   verifyStripe,
   verifyRazorpay,
   deleteOrder,
+  getSingleOrder,
 } from "../controllers/orderController.js";
 import adminAuth from "../middleware/adminAuth.js";
 import authUser from "../middleware/auth.js";
@@ -26,7 +27,9 @@ orderRouter.post("/stripe", authUser, placeOrderStripe);
 orderRouter.post("/razorpay", authUser, placeOrderRazorpay);
 
 // User Feature
-orderRouter.post("/userorders", authUser, userOrders);
+orderRouter.get("/userorders", authUser, userOrders);
+orderRouter.post("/updatestatus", authUser, updateStatus);
+orderRouter.get("/singleorder/:id", authUser, getSingleOrder);
 
 // verify payment
 orderRouter.post("/verifyStripe", authUser, verifyStripe);

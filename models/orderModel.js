@@ -1,9 +1,9 @@
 import mongoose from 'mongoose'
 
-const orderSchema = new mongoose.Schema({
+const orderSchema = new mongoose.Schema({ 
     userId: {
         type: mongoose.Schema.Types.ObjectId,
-        ref: "User",
+        ref: "user",
         required: true,
       },
       items: [
@@ -21,5 +21,5 @@ const orderSchema = new mongoose.Schema({
     date: {type: Number, required:true},
 })
 
-const orderModel = mongoose.models.order || mongoose.model('order',orderSchema)
+const orderModel = mongoose.models.order || mongoose.model('Order',orderSchema)
 export default orderModel;

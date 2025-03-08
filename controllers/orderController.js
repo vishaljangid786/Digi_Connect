@@ -3,6 +3,8 @@ import userModel from "../models/userModel.js";
 import Stripe from "stripe";
 import razorpay from "razorpay";
 import jwt from "jsonwebtoken";
+import productModel from "../models/productModel.js";
+import Cart from "../models/cartModel.js";
 
 // global variables
 const currency = "inr";
@@ -19,39 +21,85 @@ const razorpayInstance = new razorpay({
 // Placing orders using COD Method
 const placeOrder = async (req, res) => {
   try {
-    const { userId, items, amount, address } = req.body;
+    const { items, amount, address } = req.body;
+    const userId = req.user.userId || req.user.id;
 
-    if (!userId) {
-      return res.json({ success: false, message: "User ID is required" });
-    }
     if (!items || items.length === 0) {
       return res.json({ success: false, message: "Cart is empty" });
     }
+    if (!address) {
+      return res.json({ success: false, message: "Address is required" });
+    }
 
-    const orderData = {
+    // const cart = await CartModel.findOne({ _id: cartId }).populate(
+    //   "items.productId"
+    // );
+
+    // if (!cart) {
+    //   return res.status(404).json({ message: "Cart not found" });
+    // }
+
+    // let totalCC = 0;
+
+    // // Loop through items to process cc
+    // const updatedItems = cart.items.map((item) => {
+    //   if (item.productId && item.productId.cc) {
+    //     const ccValue = item.productId.cc * item.quantity; // Multiply cc by quantity
+    //     totalCC += ccValue; // Add to total
+    //     return {
+    //       ...item.toObject(),
+    //       cc: ccValue, // Add calculated cc to each item
+    //     };
+    //   }
+    //   return item.toObject(); // Return item unchanged if no cc found
+    // });
+
+    // Create order
+    const newOrder = new orderModel({
       userId,
       items,
       address,
       amount,
       paymentMethod: "COD",
       payment: false,
-      date: Date.now(),
-      status: "Pending", // Add order status
-    };
-
-    const newOrder = new orderModel(orderData);
+      date: new Date(),
+      status: "Pending",
+    });
     await newOrder.save();
 
-    // Clear user's cart after successful order placement
-    await userModel.findByIdAndUpdate(userId, { cartData: {} });
+    // Add order to buyer's orders list
+    await userModel.findByIdAndUpdate(userId, {
+      $push: { orders: newOrder._id },
+    });
 
-    res.json({ success: true, message: "Order Placed Successfully" });
+    // Update each product's seller with the order info
+    await Promise.all(
+      items.map(async (item) => {
+        const product = await productModel
+          .findById(item.productId)
+          .populate("createdBy");
+
+        if (product?.createdBy) {
+          await userModel.findByIdAndUpdate(product.createdBy, {
+            $push: { selled: newOrder._id },
+          });
+        }
+      })
+    );
+
+    // ✅ Reset user's cart in Cart collection
+    await Cart.findOneAndUpdate({ userId }, { $set: { items: [] } });
+
+    res.json({
+      success: true,
+      message: "Order Placed Successfully",
+      order: newOrder,
+    });
   } catch (error) {
     console.error("Error placing order:", error);
     res.status(500).json({ success: false, message: "Internal Server Error" });
   }
 };
-
 
 // Placing orders using Stripe Method
 const placeOrderStripe = async (req, res) => {
@@ -208,7 +256,7 @@ const userOrders = async (req, res) => {
 
     // Verify the token
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
-    const userId = decoded.id || decoded.userId; 
+    const userId = decoded.id || decoded.userId;
 
     // Find orders associated with the user
     const orders = await orderModel.find({ userId }).sort({ date: -1 });
@@ -220,18 +268,68 @@ const userOrders = async (req, res) => {
   }
 };
 
+const getSingleOrder = async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    const order = await orderModel
+      .findById(id)
+      .populate("userId") // ✅ Fetch user details
+      .populate({
+        path: "items.productId",
+        model: "Product", // ✅ Ensure it's fetching from the correct model
+      });
+
+    if (!order) {
+      return res
+        .status(404)
+        .json({ success: false, message: "Order not found" });
+    }
+
+    res.status(200).json({ success: true, order });
+  } catch (error) {
+    console.error("Error fetching order:", error);
+    res.status(500).json({ success: false, message: "Internal Server Error" });
+  }
+};
+
 // update order status from Admin Panel
 const updateStatus = async (req, res) => {
   try {
     const { orderId, status } = req.body;
 
-    await orderModel.findByIdAndUpdate(orderId, { status });
-    res.json({ success: true, message: "Status Updated" });
+    if (!orderId || !status) {
+      return res.status(400).json({
+        success: false,
+        message: "Missing orderId or status",
+      });
+    }
+
+    const order = await orderModel.findById(orderId);
+    if (!order) {
+      return res.status(404).json({
+        success: false,
+        message: "Order not found",
+      });
+    }
+
+    order.status = status;
+    await order.save();
+
+    res.status(200).json({
+      success: true,
+      message: "Order status updated",
+      order,
+    });
   } catch (error) {
-    console.log(error);
-    res.json({ success: false, message: error.message });
+    console.error("Error updating order status:", error);
+    res.status(500).json({
+      success: false,
+      message: "Internal Server Error",
+    });
   }
 };
+
 // delete order from admin panel
 const deleteOrder = async (req, res) => {
   try {
@@ -258,6 +356,7 @@ export {
   placeOrderRazorpay,
   allOrders,
   userOrders,
+  getSingleOrder,
   updateStatus,
   deleteOrder,
 };
