@@ -589,7 +589,7 @@ const addReferenceMember = async (req, res) => {
       { new: true }
     );
 
-    res.status(201).json({ message: "add team member successful" });
+    res.status(201).json({ message: "add team member successful", user });
   } catch (error) {
     console.error("addReferenceMember Error", error.message);
     res.status(500).json({ message: "Internal Server Error" });
