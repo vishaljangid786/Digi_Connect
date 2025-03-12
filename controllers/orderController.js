@@ -54,6 +54,26 @@ const placeOrder = async (req, res) => {
     //   return item.toObject(); // Return item unchanged if no cc found
     // });
 
+    const populateItems = async (items) => {
+      return await Promise.all(
+        items.map(async (item) => {
+          // Populate productId to get cc and createdBy
+          const product = await productModel
+            .findById(item.productId)
+            .select("cc createdBy");
+
+          return {
+            ...item,
+            cc: product?.cc || null, // Get cc
+            createdBy: product?.createdBy || null, // Get createdBy
+          };
+        })
+      );
+    };
+
+    const sellerData = await populateItems(items);
+    // console.log(sellerData);
+
     // Create order
     const newOrder = new orderModel({
       userId,
@@ -71,6 +91,61 @@ const placeOrder = async (req, res) => {
     await userModel.findByIdAndUpdate(userId, {
       $push: { orders: newOrder._id },
     });
+
+    // for (let i = 0; i < sellerData.length; i++) {
+    //   if (sellerData[i]?.createdBy) {
+    //     const getSeller = await userModel.findOne({
+    //       _id: sellerData[i].createdBy,
+    //     });
+    //     await userModel.findByIdAndUpdate(sellerData[i].createdBy, {
+    //       cc: getSeller.cc + sellerData[i].cc,
+    //     });
+    //   }
+    // }
+
+    // const updateSellers = async (sellerData) => {
+    //   console.log("data", sellerData);
+    //   await Promise.all(
+    //     sellerData
+    //       .filter((seller) => seller?.createdBy) // Ensure createdBy exists
+    //       .map((seller) =>
+    //         userModel.findByIdAndUpdate(seller.createdBy, {
+    //           $inc: { cc: seller.cc }, // Increment cc directly
+    //         })
+    //       )
+    //   );
+    // };
+
+    const updateSellers = async (sellerData) => {
+      try {
+        console.log("Updating sellers:", sellerData);
+
+        await Promise.all(
+          sellerData
+            .filter(
+              (seller) => seller?.createdBy && typeof seller.cc === "number"
+            )
+            .map(async (seller) => {
+              const updatedUser = await userModel.findByIdAndUpdate(
+                seller.createdBy,
+                { $inc: { cc: seller.cc || 0 } }, // Ensure cc exists
+                { new: true } // Return updated document
+              );
+
+              console.log(
+                `Updated cc for user ${seller.createdBy}:`,
+                updatedUser?.cc
+              );
+            })
+        );
+
+        console.log("All sellers updated successfully!");
+      } catch (error) {
+        console.error("Error updating sellers:", error);
+      }
+    };
+
+    await updateSellers(sellerData);
 
     // Update each product's seller with the order info
     await Promise.all(
