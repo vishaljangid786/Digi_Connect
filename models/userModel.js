@@ -15,12 +15,12 @@ const userSchema = new mongoose.Schema(
     referredBy: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "user",
+      required: true,
       default: null,
     },
     cc: { type: Number, default: 0 },
     amount: { type: Number, default: 0 },
     uid: String,
-
     orders: [{ type: mongoose.Schema.Types.ObjectId, ref: "Order" }],
     products: [{ type: mongoose.Schema.Types.ObjectId, ref: "Product" }],
     selled: [{ type: mongoose.Schema.Types.ObjectId, ref: "Order" }],

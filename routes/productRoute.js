@@ -48,6 +48,7 @@ addProduct
 );
 productRouter.delete("/remove/:id", removeProduct);
 productRouter.post("/single", singleProduct);
+productRouter.post("/single/:id", singleProduct);
 productRouter.get("/list", listProducts);
 productRouter.get("/fetchcategories", fetchcategory);
 productRouter.post("/addReview", addReview);

@@ -13,10 +13,12 @@ const addProduct = async (req, res) => {
       price,
       category,
       subCategory,
-      color,
+      color,  
+      cc,
       sizes,
       bestseller,
     } = req.body;
+    
 
     // Ensure user is authenticated
     if (!req.user.userId) {
@@ -35,6 +37,7 @@ const addProduct = async (req, res) => {
       !description ||
       !price ||
       !category ||
+      !cc||
       !subCategory ||
       !color ||
       !sizes
@@ -72,6 +75,7 @@ const addProduct = async (req, res) => {
       category,
       price: Number(price),
       subCategory,
+      cc: Number(cc),
       color,
       bestseller: bestseller === "true",
       sizes: Array.isArray(sizes) ? sizes : JSON.parse(sizes || "[]"),
@@ -117,18 +121,29 @@ const listProducts = async (req, res) => {
 // function for removing product
 const removeProduct = async (req, res) => {
   try {
-    await productModel.findByIdAndDelete(req.params.id); // ✅ Get `id` from URL params
+    const productId = req.params.id || req.body.id; // Get ID from params OR body
+
+    if (!productId) {
+      return res
+        .status(400)
+        .json({ success: false, message: "Product ID is required" });
+    }
+
+    await productModel.findByIdAndDelete(productId);
     res.json({ success: true, message: "Product Removed" });
   } catch (error) {
-    console.log(error);
-    res.json({ success: false, message: error.message });
+    console.error("Error removing product:", error);
+    res.status(500).json({ success: false, message: error.message });
   }
 };
+
 
 // function for single product info
 const singleProduct = async (req, res) => {
   try {
-    const { productId } = req.body; 
+    const { productId } = req.body || req.params; 
+    console.log(productId);
+    
 
     if (!productId) {
       return res

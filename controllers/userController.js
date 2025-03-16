@@ -57,6 +57,7 @@ If you did not request this code, please ignore this email.
 Best regards,  
 Vk Marketing`,
     };
+    // console.log(otp);
 
     await transporter.sendMail(mailOptions);
 
@@ -181,6 +182,7 @@ const loginUser = async (req, res) => {
     res.json({ success: false, message: error.message });
   }
 };
+
 // Route for user register
 const registerUser = async (req, res) => {
   try {
@@ -354,10 +356,10 @@ const removeUser = async (req, res) => {
 // Route for admin login
 const adminLogin = async (req, res) => {
   try {
-    const { email, password } = req.body;
+    const { uid, password } = req.body;
 
-    // Check if the user exists
-    const user = await userModel.findOne({ email });
+    const user = await userModel.findOne({ uid });
+
     if (!user) {
       return res
         .status(404)
@@ -369,15 +371,14 @@ const adminLogin = async (req, res) => {
     if (!isPasswordValid) {
       return res
         .status(401)
-        .json({ success: false, message: "Invalid password or email" });
+        .json({ success: false, message: "Invalid UID or password" });
     }
 
-    // Generate JWT token with role
+    // Generate JWT token
     const token = jwt.sign(
       {
         userId: user._id,
-        email: user.email,
-        role: user.role, // Include role in the token
+        role: user.role,
       },
       process.env.JWT_SECRET,
       { expiresIn: "7d" }
@@ -389,8 +390,8 @@ const adminLogin = async (req, res) => {
       message: "Login successful",
       token,
       user: {
+        id: user._id,
         name: user.name,
-        email: user.email,
         role: user.role,
       },
     });
@@ -399,6 +400,21 @@ const adminLogin = async (req, res) => {
     res.status(500).json({ success: false, message: "Server error" });
   }
 };
+
+const checkrefferalcode = async(req,res)=>{
+  try {
+    const { referralCode } = req.body;
+    
+    const user = await userModel.findOne({ referralCode });
+    if (user) {
+      return res.json({ success: true, message: "Referral code is valid." });
+    } else {
+      return res.json({ valid: false, message: "Invalid referral code." });
+    }
+  } catch (error) {
+    return res.status(500).json({ message: "Server error." });
+  }
+}
 
 const authRole = (role) => {
   return (req, res, next) => {
@@ -720,14 +736,40 @@ const updatecc = async (req, res) => {
       message: "Total CC updated successfully",
       user: updatedUser,
     });
+    
   } catch (error) {
     console.error("Error updating CC:", error);
     res.status(500).json({ success: false, message: "Server error" });
   }
 };
 
+// Fetch multiple users by their IDs
+const fetchMultipleUsers = async (req, res) => {
+  try {
+    const { userIds } = req.body;
+
+    if (!userIds || !Array.isArray(userIds)) {
+      return res
+        .status(400)
+        .json({ success: false, message: "Invalid user IDs" });
+    }
+
+    // Fetch users whose IDs are in the provided list, excluding passwords
+    const users = await userModel
+      .find({ _id: { $in: userIds } })
+      .select("-password");
+
+    res.status(200).json({ success: true, users });
+  } catch (error) {
+    console.error("Error fetching multiple users:", error);
+    res.status(500).json({ success: false, message: "Server error" });
+  }
+};
+
 export {
+  checkrefferalcode,
   getReferredUsers,
+  fetchMultipleUsers,
   sendOtp,
   verifyOtp,
   updatecc,

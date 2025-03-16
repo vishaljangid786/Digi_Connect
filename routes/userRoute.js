@@ -16,6 +16,8 @@ import {
   getTeamMember,
   getOptionTeam,
   updatecc,
+  fetchMultipleUsers,
+  checkrefferalcode,
 } from "../controllers/userController.js";
 import upload from "../middleware/multer.js";
 import authUser from "../middleware/auth.js";
@@ -49,5 +51,7 @@ userRouter.post("/addReferenceMember", authUser, addReferenceMember);
 userRouter.get("/getTeamMember", authUser, getTeamMember);
 userRouter.get("/getOptionTeam", authUser, getOptionTeam);
 userRouter.put("/updatecc", authUser, updatecc);
+userRouter.post("/check-referral", checkrefferalcode);
+userRouter.post("/fetchMultipleUsers", authUser, fetchMultipleUsers);
 
 export default userRouter;
