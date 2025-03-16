@@ -126,6 +126,7 @@ const placeOrder = async (req, res) => {
               (seller) => seller?.createdBy && typeof seller.cc === "number"
             )
             .map(async (seller) => {
+              // Call the function for the initial seller
               const updatedUser = await userModel.findByIdAndUpdate(
                 seller.createdBy,
                 { $inc: { cc: seller.cc || 0 } }, // Ensure cc exists
@@ -136,6 +137,11 @@ const placeOrder = async (req, res) => {
                 `Updated cc for user ${seller.createdBy}:`,
                 updatedUser?.cc
               );
+
+              if (updatedUser?.referredBy) {
+                await updateCCRecursively(updatedUser.referredBy, seller.cc || 0);
+              }
+
             })
         );
 
@@ -146,6 +152,21 @@ const placeOrder = async (req, res) => {
     };
 
     await updateSellers(sellerData);
+
+    const updateCCRecursively = async (userId, ccToAdd) => {
+      if (!userId || ccToAdd <= 0) return;
+
+      const updatedUser = await userModel.findByIdAndUpdate(
+        userId,
+        { $inc: { cc: ccToAdd } }, // Increase cc
+        { new: true } // Return updated document
+      );
+
+      // Check if the user has a referredBy field
+      if (updatedUser?.referredBy) {
+        await updateCCRecursively(updatedUser.referredBy, ccToAdd); // Recursively update referredBy
+      }
+    };
 
     // Update each product's seller with the order info
     await Promise.all(
