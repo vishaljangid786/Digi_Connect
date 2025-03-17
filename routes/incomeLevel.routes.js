@@ -8,6 +8,7 @@ import authUser from "../middleware/auth.js";
 const incomeLevelRoute = express.Router();
 
 incomeLevelRoute.post("/addNewLevel", authRole("admin"), addNewLevel);
-incomeLevelRoute.get("/getAllLevel", authUser, getAllLevel);
+// incomeLevelRoute.get("/getAllLevel", authUser, getAllLevel);
+incomeLevelRoute.get("/getAllLevel", getAllLevel);
 
 export default incomeLevelRoute;

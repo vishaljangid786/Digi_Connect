@@ -8,6 +8,7 @@ import productModel from "../models/productModel.js";
 import OTP from "../models/otpModel.js";
 import nodemailer from "nodemailer";
 import otpGenerator from "otp-generator";
+import IncomeLevel from "../models/incomeLevel.js";
 
 const transporter = nodemailer.createTransport({
   service: "gmail",
@@ -401,10 +402,10 @@ const adminLogin = async (req, res) => {
   }
 };
 
-const checkrefferalcode = async(req,res)=>{
+const checkrefferalcode = async (req, res) => {
   try {
     const { referralCode } = req.body;
-    
+
     const user = await userModel.findOne({ referralCode });
     if (user) {
       return res.json({ success: true, message: "Referral code is valid." });
@@ -471,40 +472,7 @@ const fetchReferralCode = async (req, res) => {
   }
 };
 
-const fetchUserData = async (req, res) => {
-  try {
-    const token = req.headers.authorization?.split(" ")[1];
 
-    if (!token) {
-      return res.status(401).json({
-        success: false,
-        message: "No token provided",
-      });
-    }
-
-    const decoded = jwt.verify(token, process.env.JWT_SECRET);
-    const userId = decoded.id || decoded.userId;
-
-    const user = await userModel.findById(userId).select("-password");
-    if (!user) {
-      return res.status(404).json({
-        success: false,
-        message: "User not found",
-      });
-    }
-
-    res.json({
-      success: true,
-      user,
-    });
-  } catch (error) {
-    console.error("Error in fetchUserData:", error);
-    res.status(500).json({
-      success: false,
-      message: "Error fetching user data",
-    });
-  }
-};
 
 const getReferredUsers = async (req, res) => {
   try {
@@ -736,7 +704,7 @@ const updatecc = async (req, res) => {
       message: "Total CC updated successfully",
       user: updatedUser,
     });
-    
+
   } catch (error) {
     console.error("Error updating CC:", error);
     res.status(500).json({ success: false, message: "Server error" });
@@ -763,6 +731,61 @@ const fetchMultipleUsers = async (req, res) => {
   } catch (error) {
     console.error("Error fetching multiple users:", error);
     res.status(500).json({ success: false, message: "Server error" });
+  }
+};
+
+
+const fetchUserData = async (req, res) => {
+  try {
+    const token = req.headers.authorization?.split(" ")[1];
+
+    if (!token) {
+      return res.status(401).json({
+        success: false,
+        message: "No token provided",
+      });
+    }
+
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    const userId = decoded.id || decoded.userId;
+
+    const user = await userModel.findById(userId).select("-password");
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: "User not found",
+      });
+    }
+
+    // Fetch all income levels
+    const levelModel = await IncomeLevel.find({});
+
+    for (let i = 0; i < levelModel.length; i++) {
+      const level = levelModel[i]; // Store current level
+
+      // Check if the level already exists in user's level array
+      if (!user.level.includes(level._id)) {
+        // Check if user has enough cc to unlock this level
+        if (user.cc >= level.left) {
+          user.level.push(level._id);
+          user.amount += level.price; // Corrected the reference to level.price
+        }
+      }
+    }
+
+    // Save the user only once after the loop (more efficient)
+    await user.save();
+
+    res.json({
+      success: true,
+      user,
+    });
+  } catch (error) {
+    console.error("Error in fetchUserData:", error);
+    res.status(500).json({
+      success: false,
+      message: "Error fetching user data",
+    });
   }
 };
 

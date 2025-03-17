@@ -33,10 +33,11 @@ const userSchema = new mongoose.Schema(
       zipcode: { type: String },
     },
     option: { type: String, enum: ["left", "right", ""], default: "" },
-    team: [
+    level: [
       {
         type: mongoose.Schema.Types.ObjectId,
-        ref: "user",
+        ref: "IncomeLevel",
+        default: null
       },
     ],
 

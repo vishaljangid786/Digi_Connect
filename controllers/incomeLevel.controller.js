@@ -2,8 +2,8 @@ import IncomeLevel from "../models/incomeLevel.js";
 
 const addNewLevel = async (req, res) => {
   try {
-    const { levelName, left, right, price } = req.body;
-    if (!levelName || !left || !right || !price) {
+    const { levelName, left, right, levelType, price } = req.body;
+    if (!levelName || !left || !right || !price || !levelType) {
       return res.status(400).json({
         error: "required MissingField",
         message: {
@@ -11,6 +11,7 @@ const addNewLevel = async (req, res) => {
           left: !left ? "left is required" : undefined,
           right: !right ? "right is required" : undefined,
           price: !price ? "price is required" : undefined,
+          levelType: !levelType ? "levelType is required" : undefined,
         },
       });
     }
@@ -20,7 +21,7 @@ const addNewLevel = async (req, res) => {
         .status(409)
         .json({ message: `This ${levelName} already exist` });
     }
-    const newLevel = new IncomeLevel({ levelName, left, right, price });
+    const newLevel = new IncomeLevel({ levelName, left, levelType, right, price });
     await newLevel.save();
 
     res.status(201).json({ message: "new Level create successful" });

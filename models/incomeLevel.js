@@ -8,15 +8,19 @@ const incomeLevelSchema = new mongoose.Schema(
       unique: true,
     },
     left: {
-      type: String,
+      type: Number,
       required: true,
     },
-    right: {
+    levelType: {
       type: String,
+      required: true
+    },
+    right: {
+      type: Number,
       required: true,
     },
     price: {
-      type: String,
+      type: Number,
       required: true,
     },
   },
