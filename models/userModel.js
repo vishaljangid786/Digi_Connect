@@ -11,11 +11,11 @@ const userSchema = new mongoose.Schema(
     role: { type: String, enum: ["admin", "user"], default: "user" },
 
     cartData: { type: Object, default: {} },
+    pricetopay: { type: Number, default: 0 },
     referralCode: { type: String, unique: true },
     referredBy: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "user",
-      required: true,
       default: null,
     },
     cc: { type: Number, default: 0 },
@@ -24,6 +24,7 @@ const userSchema = new mongoose.Schema(
     orders: [{ type: mongoose.Schema.Types.ObjectId, ref: "Order" }],
     products: [{ type: mongoose.Schema.Types.ObjectId, ref: "Product" }],
     selled: [{ type: mongoose.Schema.Types.ObjectId, ref: "Order" }],
+    blocked: { type: Boolean, default: false },
 
     address: {
       street: { type: String },
